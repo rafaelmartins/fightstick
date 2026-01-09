@@ -1,5 +1,5 @@
 # fightstick
 
-A custom-made fight stick for PC and MiSTer FPGA.
+A customizable fight stick for Linux and MiSTer FPGA.
 
 ![fightstick](./images/fightstick.jpg)
