@@ -1,0 +1,19 @@
+[[applicationCollection]]
+usage = ['Generic Desktop', 'Gamepad']
+
+    [[applicationCollection.inputReport]]
+
+        [[applicationCollection.inputReport.physicalCollection]]
+        usage = ['Generic Desktop', 'Pointer']
+
+            [[applicationCollection.inputReport.physicalCollection.variableItem]]
+            usage = ['Generic Desktop', 'X']
+            logicalValueRange = [-1, 1]
+
+            [[applicationCollection.inputReport.physicalCollection.variableItem]]
+            usage = ['Generic Desktop', 'Y']
+            logicalValueRange = [-1, 1]
+
+        [[applicationCollection.inputReport.variableItem]]
+        usageRange = ['Button', 'Button 1', 'Button 12']
+        logicalValueRange = [0, 1]
