@@ -9,8 +9,8 @@
 #define MANUFACTURER u"rgm.io"
 #define PRODUCT      u"fightstick"
 
-#define ID_VENDOR  0x16c0
-#define ID_PRODUCT 0x27db
+#define ID_VENDOR  0x1d50
+#define ID_PRODUCT 0x619a
 
 // +----------+-------+-------------------+
 // | ReportId | Kind  | ReportSizeInBytes |
