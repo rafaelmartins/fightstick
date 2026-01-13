@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Rafael G. Martins <rafael@rafaelmartins.eng.br>
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include <stm32f0xx.h>
@@ -10,6 +11,31 @@
 
 #include "bootloader.h"
 #include "idle.h"
+
+static uint32_t sreport = 0;
+static union {
+    struct __attribute__((packed)) {
+        uint8_t id;
+        int8_t x : 2;
+        int8_t y : 2;
+        bool btn01 : 1;
+        bool btn02 : 1;
+        bool btn03 : 1;
+        bool btn04 : 1;
+        bool btn05 : 1;
+        bool btn06 : 1;
+        bool btn07 : 1;
+        bool btn08 : 1;
+        bool btn09 : 1;
+        bool btn10 : 1;
+        bool btn11 : 1;
+        bool btn12 : 1;
+    } s;
+    uint32_t r;
+} report = {
+    .s.id = 1,
+};
+static_assert(sizeof(report.s) == 3);
 
 
 void
@@ -54,42 +80,25 @@ usbd_in_cb(uint8_t ept)
     // A8 - BTN11
     // A9 - BTN12
 
-    static struct __attribute__((packed)) {
-        uint8_t id;
-        int8_t x : 2;
-        int8_t y : 2;
-        bool btn01 : 1;
-        bool btn02 : 1;
-        bool btn03 : 1;
-        bool btn04 : 1;
-        bool btn05 : 1;
-        bool btn06 : 1;
-        bool btn07 : 1;
-        bool btn08 : 1;
-        bool btn09 : 1;
-        bool btn10 : 1;
-        bool btn11 : 1;
-        bool btn12 : 1;
-    } report = {
-        .id = 1,
-    };
+    report.s.x = (GPIOB->IDR & GPIO_IDR_4) == 0 ? 1 : ((GPIOB->IDR & GPIO_IDR_3) == 0 ? -1 : 0);
+    report.s.y = (GPIOB->IDR & GPIO_IDR_5) == 0 ? 1 : ((GPIOB->IDR & GPIO_IDR_6) == 0 ? -1 : 0);
+    report.s.btn01 = (GPIOA->IDR & GPIO_IDR_0) == 0;
+    report.s.btn02 = (GPIOA->IDR & GPIO_IDR_1) == 0;
+    report.s.btn03 = (GPIOA->IDR & GPIO_IDR_2) == 0;
+    report.s.btn04 = (GPIOA->IDR & GPIO_IDR_3) == 0;
+    report.s.btn05 = (GPIOA->IDR & GPIO_IDR_4) == 0;
+    report.s.btn06 = (GPIOA->IDR & GPIO_IDR_5) == 0;
+    report.s.btn07 = (GPIOA->IDR & GPIO_IDR_6) == 0;
+    report.s.btn08 = (GPIOA->IDR & GPIO_IDR_7) == 0;
+    report.s.btn09 = (GPIOB->IDR & GPIO_IDR_0) == 0;
+    report.s.btn10 = (GPIOB->IDR & GPIO_IDR_1) == 0;
+    report.s.btn11 = (GPIOA->IDR & GPIO_IDR_8) == 0;
+    report.s.btn12 = (GPIOA->IDR & GPIO_IDR_9) == 0;
 
-    report.x = (GPIOB->IDR & GPIO_IDR_4) == 0 ? 1 : ((GPIOB->IDR & GPIO_IDR_3) == 0 ? -1 : 0);
-    report.y = (GPIOB->IDR & GPIO_IDR_5) == 0 ? 1 : ((GPIOB->IDR & GPIO_IDR_6) == 0 ? -1 : 0);
-    report.btn01 = (GPIOA->IDR & GPIO_IDR_0) == 0;
-    report.btn02 = (GPIOA->IDR & GPIO_IDR_1) == 0;
-    report.btn03 = (GPIOA->IDR & GPIO_IDR_2) == 0;
-    report.btn04 = (GPIOA->IDR & GPIO_IDR_3) == 0;
-    report.btn05 = (GPIOA->IDR & GPIO_IDR_4) == 0;
-    report.btn06 = (GPIOA->IDR & GPIO_IDR_5) == 0;
-    report.btn07 = (GPIOA->IDR & GPIO_IDR_6) == 0;
-    report.btn08 = (GPIOA->IDR & GPIO_IDR_7) == 0;
-    report.btn09 = (GPIOB->IDR & GPIO_IDR_0) == 0;
-    report.btn10 = (GPIOB->IDR & GPIO_IDR_1) == 0;
-    report.btn11 = (GPIOA->IDR & GPIO_IDR_8) == 0;
-    report.btn12 = (GPIOA->IDR & GPIO_IDR_9) == 0;
-
-    usbd_in(ept, &report, sizeof(report));
+    if (idle_request() || report.r != sreport) {
+        sreport = report.r;
+        usbd_in(ept, &report.s, sizeof(report.s));
+    }
 }
 
 
@@ -125,8 +134,11 @@ usbd_ctrl_request_handle_class_cb(usb_ctrl_request_t *req)
 void
 usbd_reset_hook_cb(bool before)
 {
-    if (before)
-        GPIOA->BSRR = GPIO_BSRR_BR_15;
+    if (!before)
+        return;
+
+    sreport = 0;
+    GPIOA->BSRR = GPIO_BSRR_BR_15;
 }
 
 
@@ -165,6 +177,7 @@ main(void)
         bootloader_reset();
 
     clock_init();
+    idle_init();
     usbd_init();
 
     while (true)
