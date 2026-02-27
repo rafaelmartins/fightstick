@@ -5,20 +5,13 @@ cmake_minimum_required(VERSION 3.25)
 
 include(FetchContent)
 
-FetchContent_Declare(cmake_cmsis_stm32
-    GIT_REPOSITORY https://github.com/rafaelmartins/cmake-cmsis-stm32.git
-    GIT_TAG 5042adce80f41f937d09ea7db59f595f6718a7e8
-)
 FetchContent_Declare(usbd_fs_stm32
     GIT_REPOSITORY https://github.com/rafaelmartins/usbd-fs-stm32.git
     GIT_TAG 4a1295d85854eaa0729ba3e531d1fa69adfa0025
 )
 FetchContent_MakeAvailable(
-    cmake_cmsis_stm32
     usbd_fs_stm32
 )
-
-project(fightstick C ASM)
 
 add_executable(fightstick
     bootloader.c
@@ -55,3 +48,4 @@ cmsis_stm32_target(fightstick
     STLINK ON
     INSTALL ON
 )
+
