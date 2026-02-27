@@ -10,7 +10,10 @@ The fightstick firmware is a bare-metal C application targeting the STM32F042K4 
 - ARM GNU Toolchain (`arm-none-eabi`)
 - Ninja (recommended) or Make
 
-The build system automatically fetches [cmake-cmsis-stm32](@@/p/cmake-cmsis-stm32/) and [usbd-fs-stm32](@@/p/usbd-fs-stm32/) via CMake's FetchContent mechanism. No manual dependency installation is needed beyond the toolchain.
+The following dependencies are fetched automatically via CMake FetchContent:
+
+- [cmake-cmsis-stm32](@@/p/cmake-cmsis-stm32/) -- CMake build support for STM32 CMSIS-based projects
+- [usbd-fs-stm32](@@/p/usbd-fs-stm32/) -- USB full-speed device library for STM32 microcontrollers
 
 ### Configure and build
 
@@ -21,13 +24,15 @@ cmake --build build
 
 ### Output artifacts
 
+The build produces the following in the `build/` directory:
+
 | File | Description |
 |------|-------------|
 | `fightstick.elf` | ELF binary |
+| `fightstick.elf.map` | Linker map |
 | `fightstick.bin` | Raw binary |
 | `fightstick.hex` | Intel HEX |
 | `fightstick.dfu` | DFU with suffix (for `dfu-util`) |
-| `fightstick.map` | Linker map |
 
 ### Memory layout
 
@@ -38,15 +43,9 @@ cmake --build build
 
 ## Flashing
 
-### Using ST-Link
-
-See the [Hardware Build Manual](@@/hardware/build-manual/) for general ST-Link instructions. The cmake target for ST-Link flashing using `st-flash` binary from the open-source `stlink` tools:
-
-```bash
-cmake --build build --target fightstick-stlink-write
-```
-
 ### Using USB DFU
+
+Automated builds from the latest source are available from the [`rolling` release](https://github.com/rafaelmartins/fightstick/releases/tag/rolling).
 
 The STM32F042K4 has a built-in USB DFU bootloader in system memory. There are two ways to enter DFU mode:
 
@@ -56,6 +55,16 @@ The STM32F042K4 has a built-in USB DFU bootloader in system memory. There are tw
 When the firmware detects both BTN09 and BTN10 held at startup, it writes a magic value (`0xdeadbeef`) to an RTC backup register and triggers a software reset. On the subsequent boot, the firmware reads this value and jumps to the system bootloader at `0x1FFFC400`.
 
 See the [Hardware Build Manual](@@/hardware/build-manual/) for general DFU flashing instructions using `dfu-util`.
+
+### Using ST-Link
+
+Flash via the provided CMake target:
+
+```bash
+cmake --build build --target fightstick-stlink-write
+```
+
+See the [Hardware Build Manual](@@/hardware/build-manual/) for general ST-Link setup and flashing instructions.
 
 ## Architecture overview
 
@@ -75,13 +84,15 @@ The firmware configures the system clock to use the HSI48 internal oscillator di
 | USB | Full-speed USB device peripheral |
 | RTC BKP0R | Bootloader entry flag register |
 
+See [Assembly](10_assembly.md) for physical wiring details and pin assignments.
+
 ### Main loop
 
 The `main()` function initializes GPIO ports with pull-ups, checks for the DFU button combination, then configures the clock, idle timer, and USB peripheral. The main loop calls `usbd_task()` continuously to process USB events.
 
 On each USB IN token for endpoint 1, the `usbd_in_cb()` callback reads all 16 GPIO inputs and constructs the HID report. The report is only sent when the input state changes or when the HID idle timer expires, reducing unnecessary USB traffic.
 
-### Main source files
+### Source files
 
 | File | Purpose |
 |------|---------|
