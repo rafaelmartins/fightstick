@@ -53,7 +53,7 @@ jobs:
           cmake \
             -B ${{ github.workspace }}/build \
             -D CMAKE_BUILD_TYPE=Release \
-            -S ${{ github.workspace }}/fightstick/firmware \
+            -S ${{ github.workspace }}/fightstick \
             -G Ninja
 
           cmake \
